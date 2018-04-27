@@ -12,7 +12,7 @@
     <!-- css -->
     <link rel="stylesheet" type="text/css" href="style/main.css">
 
-    <!-- script -->
+    <!-- scripts -->
     <script type="text/javascript" src="script\jquery\jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="script\js.cookie.js"></script>
     <script type="text/javascript" src="script\json2.js"></script>
@@ -20,9 +20,7 @@
 
 
     <script>
-        <!-- consts -->
-        //googleAutocompleteAPIKey
-        var googleJSAPIKey = "";
+        /** consts **/
         const defaultHistoryOptionsAmount = 2;
 
         var map;
@@ -47,9 +45,9 @@
 </head>
 
 <body>
-<container>
+<div>
     <div id="searchControls">
-        <input type="text" class="col-3" placeholder="I'm searching for " id="searchAddressField"
+        <input type="text" class="col-3" placeholder="I'm searching for" id="searchAddressField"
                name="searchAddressField"/>
         <input type="button" class="col-3" value="Go" onclick="go();" id="submitButton" name="submitButton"/>
         <select id="selectHistory" class="col-3" name="selectHistory">
@@ -59,8 +57,8 @@
     </div>
 
     <div id="wrapper">
-        <div id="map"
-    </div>
+        <div id="map">
+        </div>
     </div>
 
     <div class="logos">
@@ -68,43 +66,66 @@
              alt="Powered by Google logo"/>
         <img id="ConcisoLogo" src="image\conciso\logo.png" alt="Supported by Conciso"/>
     </div>
-</container>
+</div>
+
 <script>
 
     function go() {
         let selectHistory = document.getElementById("selectHistory");
         let newOption = document.createElement("option");
-        let currentSearchAddressField = document.getElementById("searchAddressField").value;
-        if (HistoryItemsArray)
-            for (var i = 0; i < HistoryItemsArray.length; i++)
-                if (HistoryItemsArray[i].description == currentSearchAddressField) {
-                    console.log(">>>error: duplicate address");
+        let currentSearchAddressFieldValue = document.getElementById("searchAddressField").value;
+
+        //check for the same place
+        if (HistoryItemsArray) {
+            for (let i = 0; i < HistoryItemsArray.length; i++)
+                if (HistoryItemsArray[i].description == currentSearchAddressFieldValue) {
+                    //console.log(">>>error: duplicate address");
                     return;
                 }
-        newOption.text = currentSearchAddressField;
+        }
+        newOption.text = currentSearchAddressFieldValue;
         selectHistory.add(newOption, selectHistory[1]);
 
         if (selectHistory.length > defaultHistoryOptionsAmount)
-            selectHistory.remove(defaultHistoryOptionsAmount + 1); // +    - default "History"
+            selectHistory.remove(defaultHistoryOptionsAmount + 1); // + 1    - default "History"
 
+
+        //console.log("center in go:" + center);
         map.panTo(center);
         map.setZoom(11);
 
-        lat = autocomplete.getPlace().geometry.location.lat();
-        lng = autocomplete.getPlace().geometry.location.lng();
-
+        let lat = autocomplete.getPlace().geometry.location.lat();
+        let lng = autocomplete.getPlace().geometry.location.lng();
         let zoom = map.getZoom();
-        let newHistoryItem = new HistoryItem(currentSearchAddressField, lng, lat, zoom);
+
+        let newHistoryItem = new HistoryItem(currentSearchAddressFieldValue, lng, lat, zoom);
+
+        //console.log("HistoryItemsArray: " + HistoryItemsArray);
+
+        //form structure with required information
         HistoryItemsArray.push(newHistoryItem);
+        //console.log("HistoryItemsArray after pushing: " + HistoryItemsArray);
+        //delete redundant results
         while (HistoryItemsArray.length > defaultHistoryOptionsAmount)
             HistoryItemsArray.shift();
 
-        //save data
+        //save data in cookie as JSON object
         $.cookie('ConcisoTestTask', JSON.stringify(HistoryItemsArray, null, 2));
+
+        //console.log("json to save: " + JSON.stringify(HistoryItemsArray, null, 2));
     }
 
     function initMap() {
 
+        initMainMap();
+        initMapCustomControls();
+        //initCurrentPosition();
+        initAutocomplete();
+        initHistory();
+        updateStoredData();
+    }
+
+    function initMainMap() {
 
         map = new google.maps.Map(document.getElementById('map'), {
             zoom: 3,
@@ -113,11 +134,11 @@
             scaleControl: true,
             streetViewControl: false,
             fullscreenControl: true,
-
             center: {lat: 0, lng: 0}
         });
+    }
 
-
+    function initMapCustomControls() {
         var searchAddressField = document.getElementById("searchAddressField");
         var submitButton = document.getElementById("submitButton");
         var selectHistory = document.getElementById("selectHistory");
@@ -125,66 +146,72 @@
         map.controls[google.maps.ControlPosition.TOP_CENTER].push(searchAddressField);
         map.controls[google.maps.ControlPosition.TOP_CENTER].push(submitButton);
         map.controls[google.maps.ControlPosition.TOP_CENTER].push(selectHistory);
+    }
+
+    function updateStoredData() {
+
+        if ($.cookie('ConcisoTestTask'))
+            HistoryItemsArray = JSON.parse($.cookie('ConcisoTestTask'));
+
+        //console.log($.cookie('ConcisoTestTask'))
+        //console.log(JSON.parse($.cookie('ConcisoTestTask')));
+
+        for (let i = 0; i < HistoryItemsArray.length && i < defaultHistoryOptionsAmount; i++) {
+            let newOption = document.createElement("option");
+            newOption.text = HistoryItemsArray[i].description;
+            selectHistory.add(newOption, selectHistory[1]);
+        }
 
 
+    }
+
+
+    function initAutocomplete() {
+        autocomplete = new google.maps.places.Autocomplete($("#searchAddressField")[0], {});
+        google.maps.event.addListener(autocomplete, 'place_changed', function () {
+            place = autocomplete.getPlace();
+            if (!place.geometry) {
+                //console.log("Geometry Error in the address: " + $("#searchAddressField").val());
+                return;
+            }
+            center = new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng());
+        });
+    }
+
+    function initHistory() {
+        //use history data
+        $("#selectHistory").change(function () {
+            let currentHistoryVal = $("#selectHistory").val();
+            $("#searchAddressField").val(currentHistoryVal);
+
+            if (HistoryItemsArray) {
+                for (let i = 0; i < HistoryItemsArray.length; i++)
+                    if (HistoryItemsArray[i].description == currentHistoryVal) {
+                        center = new google.maps.LatLng(HistoryItemsArray[i].lat, HistoryItemsArray[i].lng);
+                        map.panTo(center);
+                    }
+            }
+        })
+    }
+
+    function initCurrentPosition() {
         //search for current position to enhance usability
-        /*	var infoWindow = new google.maps.InfoWindow({map: map});
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(function(position) {
+        var infoWindow = new google.maps.InfoWindow({map: map});
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
                 var pos = {
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
                 };
 
                 infoWindow.setPosition(pos);
                 infoWindow.setContent('Location found');
                 map.setCenter(pos);
-              }, function() {
+            }, function () {
                 handleLocationError(true, infoWindow, map.getCenter());
-              });
-            }*/
-
-        autocomplete = new google.maps.places.Autocomplete($("#searchAddressField")[0], {});
-
-
-        google.maps.event.addListener(autocomplete, 'place_changed', function () {
-            place = autocomplete.getPlace();
-
-            if (!place.geometry) {
-                console.log("Geometry Error in the address " + $("#searchAddressField").val());
-                return;
-            }
-            center = new google.maps.LatLng(place.geometry.location.lat(), place.geometry.location.lng());
-        });
-
-        //send data to store in cookie/DB
-        HistoryItemsArray = JSON.parse($.cookie('ConcisoTestTask'));
-
-        if (HistoryItemsArray)
-            for (var i = 0; i < HistoryItemsArray.length && i < defaultHistoryOptionsAmount; i++) {
-                let newOption = document.createElement("option");
-                newOption.text = HistoryItemsArray[i].description;
-                selectHistory.add(newOption, selectHistory[1]);
-
-
-            }
-
+            });
+        }
     }
-
-
-    //use of history
-    $("#selectHistory").change(function () {
-        var currentHistoryVal = $("#selectHistory").val();
-        $("#searchAddressField").val(currentHistoryVal);
-
-        for (var i = 0; i < HistoryItemsArray.length; i++)
-            if (HistoryItemsArray[i].description == currentHistoryVal) {
-                console.log(HistoryItemsArray[i].lat);
-                console.log(HistoryItemsArray[i].lng);
-                center = new google.maps.LatLng(HistoryItemsArray[i].lat, HistoryItemsArray[i].lng);
-                map.panTo(center);
-            }
-    })
 </script>
 
 

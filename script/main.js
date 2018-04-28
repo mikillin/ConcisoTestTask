@@ -1,5 +1,5 @@
 /** consts **/
-const defaultHistoryOptionsAmount = 2;
+const defaultHistoryOptionsAmount = 20;
 
 var map;
 var center;

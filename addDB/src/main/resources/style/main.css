@@ -1,0 +1,61 @@
+
+#map {
+    height: 500px;
+    width: 100%;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    max-width: 960px;
+}
+
+.logos {
+    padding: 20px;
+}
+
+#container {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+#googleLogo, #ConcisoLogo {
+    width: 10%;
+    max-width: 150px;
+    height: auto;
+}
+
+#ConcisoLogo {
+    float: right;
+}
+
+#submitButton {
+    margin: 0 10px;
+
+}
+
+#submitButton, #selectHistory {
+    cursor: pointer;
+}
+
+#submitButton, #searchAddressField, #selectHistory {
+    background-color: #fff;
+    border: 2px solid #fff;
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+
+    float: left;
+    margin-bottom: 22px;
+    text-align: center;
+
+}
+
+@media (max-width: 768px) {
+    /* for smartphones*/
+    .col-3 {
+        max-width: 100%;
+    }
+
+}

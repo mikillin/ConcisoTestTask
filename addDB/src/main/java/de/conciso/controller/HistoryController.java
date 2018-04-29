@@ -1,18 +1,19 @@
 package de.conciso.controller;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import de.conciso.entity.History;
 import de.conciso.service.IHistoryService;
 
 import org.jboss.logging.Logger;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @Controller
 public class HistoryController {
@@ -26,26 +27,38 @@ public class HistoryController {
     @Autowired
     private IHistoryService historyService;
 
+    @ResponseBody
+    @RequestMapping(value = "/addNewHistoryItem")
+    public void addNewHistoryItem(@RequestBody History history) {
 
-    @RequestMapping("saveHistory")
-    public ModelAndView saveHistory(@ModelAttribute History history) {
-        logger.info("Saving the History. Data : " + history);
+        int historySizeExceeds = historyService.getAllHistories().size() - History.MAX_HISTORY_QUEUE;
+        logger.info("Adding the next History. Data: ");
+        history.setCreationTime(System.currentTimeMillis());
         historyService.createHistory(history);
-        return new ModelAndView("redirect:getAllHistorys");
+
+        for (int i = 0; i < historySizeExceeds; i++)
+            historyService.deleteEarliestHistory();
+
     }
 
-    @RequestMapping("deleteHistory")
-    public ModelAndView deleteHistory(@RequestParam long id) {
-        logger.info("Deleting the History. Id : " + id);
-        historyService.deleteHistory(id);
-        return new ModelAndView("redirect:getAllHistories");
-    }
 
-    @RequestMapping(value = {"getAllHistories", "/"})
-    public ModelAndView getAllHistories() {
-        logger.info("Getting the all Histories.");
+    @RequestMapping(value = "/getHistory", method = RequestMethod.GET)
+    public @ResponseBody
+    String getHistory() {
+
+        logger.info("Getting the History.");
         List<History> historyList = historyService.getAllHistories();
-        return new ModelAndView("historyList", "historyList", historyList);
+        Gson gsonBuilder = new GsonBuilder().create();
+        String jsonFromPojo = gsonBuilder.toJson(historyList);
+        return jsonFromPojo;
+    }
+
+    @RequestMapping(value = "/")
+    public ModelAndView getIndex() {
+
+        logger.info("Getting index");
+
+        return new ModelAndView("index");
     }
 
 

@@ -9,8 +9,11 @@ public interface IHistoryDAO {
 
     public void deleteHistory(long id);
 
+    public void deleteAllHistories();
+
     public List<History> getAllHistories();
 
     public History getHistory(long id);
 
+    public void deleteEarliestHistory();
 }

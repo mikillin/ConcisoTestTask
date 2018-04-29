@@ -24,39 +24,15 @@ function go() {
     let newOption = document.createElement("option");
     let currentSearchAddressFieldValue = document.getElementById("searchAddressField").value;
 
-
-    $.ajax("http://localhost:8080/getHistory", {
-        crossOrigin: true,
-        success: function (data) {
-            if (data)
-                HistoryItemsArray = JSON.parse(data);
-            console.log("ajax success " + data);
-            console.log("ajax success " + JSON.stringify(HistoryItemsArray, null, 2));
-
-        },
-        error: function (data) {
-            if (data)
-                HistoryItemsArray = JSON.parse(data);
-            console.log("ajax error " + data);
-            console.log("ajax error " + JSON.stringify(HistoryItemsArray, null, 2));
-
-        }
-    });
-
-
-    //check for the same place
+    if (currentSearchAddressFieldValue == "")
+        return;
+    //check for inserting previous place
+    let insrt = 1;
     if (HistoryItemsArray) {
-        for (let i = 0; i < HistoryItemsArray.length; i++)
-            if (HistoryItemsArray[i].description == currentSearchAddressFieldValue) {
-                return;
-            }
+        if (HistoryItemsArray[HistoryItemsArray.length - 1].description == currentSearchAddressFieldValue) {
+            insrt = 0;
+        }
     }
-    newOption.text = currentSearchAddressFieldValue;
-    selectHistory.add(newOption, selectHistory[1]);
-
-    if (selectHistory.length > defaultHistoryOptionsAmount)
-        selectHistory.remove(defaultHistoryOptionsAmount + 1); // + 1    - default "History"
-
 
     map.panTo(center);
     map.setZoom(11);
@@ -64,21 +40,38 @@ function go() {
     let lat = autocomplete.getPlace().geometry.location.lat();
     let lng = autocomplete.getPlace().geometry.location.lng();
     let zoom = map.getZoom();
-
     let newHistoryItem = new HistoryItem(currentSearchAddressFieldValue, lng, lat, zoom);
 
+    if (insrt == 1) {
+        newOption.text = currentSearchAddressFieldValue;
+        selectHistory.add(newOption, selectHistory[1]);
 
-    //form structure with required information
-    HistoryItemsArray.push(newHistoryItem);
-    //delete redundant results
-    while (HistoryItemsArray.length > defaultHistoryOptionsAmount)
-        HistoryItemsArray.shift();
+        if (selectHistory.length > defaultHistoryOptionsAmount)
+            selectHistory.remove(defaultHistoryOptionsAmount + 1); // + 1    - default "History"
 
-    //save data in cookie as JSON object
-    $.cookie('ConcisoTestTask', JSON.stringify(HistoryItemsArray, null, 2));
+        //form structure with required information
+        HistoryItemsArray.push(newHistoryItem);
+        //delete redundant results
+        while (HistoryItemsArray.length > defaultHistoryOptionsAmount)
+            HistoryItemsArray.shift();
 
+        //save data in cookie as JSON object
+        $.cookie('ConcisoTestTask', JSON.stringify(HistoryItemsArray, null, 2));
+
+        //save new item in DB
+
+        $.ajax({
+            type: "POST",
+            contentType: "application/json",
+            url: "/addNewHistoryItem",
+            data: JSON.stringify(newHistoryItem, null, 2),
+
+            error: function (e) {
+                console.log("DB ERROR: ", e);
+            }
+        });
+    }
 }
-
 
 function initMap() {
 
@@ -90,7 +83,7 @@ function initMap() {
     updateStoredData();
 }
 
-var initMainMap = function () {
+function initMainMap() {
 
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: 3,
@@ -103,16 +96,14 @@ var initMainMap = function () {
     });
 
     map.addListener('dragend', function () {
-
         cleanCustomControls();
     });
 
     map.addListener('zoom_changed', function () {
-
         cleanCustomControls();
     });
-
 }
+
 
 function cleanCustomControls() {
 
@@ -141,18 +132,41 @@ function initMapCustomControls() {
 
 function updateStoredData() {
 
+    //for test delete all cookie
+    // $.cookie('ConcisoTestTask', null);
+
+    //cookie
     if ($.cookie('ConcisoTestTask'))
         HistoryItemsArray = JSON.parse($.cookie('ConcisoTestTask'));
+
+    // if no info in cookie, than restore data from backup in DB
+    //db
+    if (HistoryItemsArray.length == 0) {
+        $.ajax("/getHistory", {
+
+            success: function (data) {
+                if (data) {
+                    HistoryItemsArray = JSON.parse(data);
+                    fillHistorySelect(HistoryItemsArray);
+                }
+            },
+            error: function (data) {
+                console.log(">>> ajax error.  Data: " + data);
+            }
+        });
+    } else {
+        fillHistorySelect(HistoryItemsArray);
+    }
+}
+
+function fillHistorySelect(HistoryItemsArray) {
 
     for (let i = 0; i < HistoryItemsArray.length && i < defaultHistoryOptionsAmount; i++) {
         let newOption = document.createElement("option");
         newOption.text = HistoryItemsArray[i].description;
         selectHistory.add(newOption, selectHistory[1]);
     }
-
-
 }
-
 
 function initAutocomplete() {
 
@@ -182,6 +196,7 @@ function initHistory() {
     })
 }
 
+// not used as it wasn't mentioned in specification
 function initCurrentPosition() {
     //search for current position to enhance usability
     var infoWindow = new google.maps.InfoWindow({map: map});

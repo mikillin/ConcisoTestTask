@@ -7,8 +7,6 @@ import de.conciso.util.HibernateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -34,8 +32,18 @@ public class HistoryDAOImpl implements IHistoryDAO {
         hibernateUtil.delete(history);
     }
 
+    public void deleteAllHistories() {
+        hibernateUtil.deleteAll(History.class);
+    }
+
+
     public History getHistory(long id) {
         return hibernateUtil.fetchById(id, History.class);
+    }
+
+    @Override
+    public void deleteEarliestHistory() {
+        hibernateUtil.deleteEarliest(History.class);
     }
 
     @SuppressWarnings("unchecked")

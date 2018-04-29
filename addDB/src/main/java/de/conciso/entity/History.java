@@ -5,6 +5,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "HISTORY")
 public class History {
+    public static int MAX_HISTORY_QUEUE = 20;
 
     @Id
     @Column(name = "id")
@@ -18,7 +19,8 @@ public class History {
     private float lng;
     @Column(name = "ZOOM")
     private int zoom;
-
+    @Column(name = "CREATION_TIME")
+    private long creationTime;
 
     public History() {
     }
@@ -62,4 +64,8 @@ public class History {
     public void setZoom(int zoom) {
         this.zoom = zoom;
     }
+
+    public long getCreationTime() {return creationTime;}
+
+    public void setCreationTime(long creationTime) {this.creationTime = creationTime;}
 }

@@ -11,8 +11,13 @@ public interface IHistoryService {
 
     public void deleteHistory(long id);
 
+    public void deleteAllHistories();
+
+    public void deleteEarliestHistory();
+
     public List<History> getAllHistories();
 
     public History getHistory(long id);
+
 
 }

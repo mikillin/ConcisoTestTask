@@ -29,6 +29,13 @@ public class HistoryServiceImpl implements IHistoryService {
         historyDAO.deleteHistory(id);
     }
 
+    public void deleteAllHistories() {
+        historyDAO.deleteAllHistories();
+    }
+
+    public void deleteEarliestHistory() {
+        historyDAO.deleteEarliestHistory();
+    }
 
     public List<History> getAllHistories() {
         return historyDAO.getAllHistories();
